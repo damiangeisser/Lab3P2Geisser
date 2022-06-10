@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practica Parcial</title>
+
+<style>
+
+html, body {
+  margin:0px;
+  height:100%;
+}
+
+    .container{
+        display: flex;
+        justify-content: center;
+        background-color: #cccccc;
+    }
+
+    #bloqueoUI{
+        background: #FFFFFF;
+        opacity: 0.7;
+        position:absolute;
+        top:0px;
+        right:0px;
+        bottom:0px;
+        left:0px;
+        z-index: 1;
+        cursor: wait;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #spinner{
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #09f;
+
+        animation: spin 1s ease infinite;
+    }
+
+    @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        } 
+
+        100% {
+          transform: rotate(360deg);
+        }
+    }
+
+    .fieldsetABM{
+        padding: 0;
+        margin: 0;
+        border-width: 0;
+    }
+
+    #controlesTabla{
+        text-align: center;
+        justify-content: center;
+        background-color: #c58d43;
+        width: 100%;
+    }
+
+    body{
+        border-collapse: collapse;
+        background-color: #cccccc;
+    }
+
+    table{
+        border-collapse: collapse;
+        background-color: #cccccc;
+    }
+
+    table, th, td{
+        border: 1px solid black;
+        padding: 5px;
+    }
+
+    #formABM {
+        z-index: 1;
+        padding: 15px;
+        position: fixed;
+        top: 10%;
+        left: 35%;
+        width: 25%;
+        min-width: 300px;
+        height: 40%;
+        min-height: 250px;
+        background-color:  #c58d43;
+    }
+
+    #modal {
+      /* display: none; Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgb(0,0,0); /* Fallback color */
+      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+    #contenidoModal {
+      background-color: #fefefe;
+      margin: 15% auto; /* 15% from the top and centered */
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%; /* Could be more or less, depending on screen size */
+    }
+
+    #cerrarModal {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    #cerrarModal :hover,
+    #cerrarModal :focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+</style>
+
+<script>
+    let listaPersonas = [];
+    let frmPersona;
+    let proximoId;
+    let divTabla;
+    let aceptar;
+    let modificacion;
+    let cancelar;
+    let index;
+    let idSeleccionado;
+    let agregar;
+    let selectorAM;
+    let cerrarModal;
+
+    window.addEventListener("load", function (){
+
+        desbloquearUI();
+        inicializarManejadores();
+        getPersonasXML(); 
+    });
+
+    class Persona { 
+        id = 1;
+        dni = 1;
+        apellido = "";
+        nombre = "";    
+
+        constructor(id, dni, apellido, nombre) {
+            this.id = id;
+            this.dni = dni;
+            this.apellido = apellido;
+            this.nombre = nombre;
+        }   
+
+        static ToString(persona)
+        {
+            return JSON.stringify(persona);
+        }
+
+        static ToJsonString(conId, persona)
+        {
+            if(conId)
+            {
+                return JSON.stringify(persona);
+            }
+            else{
+                persona.id = null;
+            
+                return JSON.stringify(persona);
+            }
+        }
+    }
+     
+    class Alumno extends Persona {
+
+        cursoNumero = 0;
+        cursoLetra = "";
+
+        constructor(id, dni, apellido, nombre, cursoNumero, cursoLetra) {
+        
+            super(id, dni, apellido, nombre);
+        
+            this.cursoNumero = cursoNumero;
+            this.cursoLetra = cursoLetra;
+        }
+
+        static ToString(alumno)
+        {
+            return super.ToString(alumno);
+        }
+
+        static ToJsonString(conId, alumno)
+        {
+            return super.ToJsonString(conId, alumno);
+        }
+    }
+
+    class Docente extends Persona {
+
+        materia = "";
+        anio = 0;
+
+        constructor(id, dni, apellido, nombre, materia, anio) {
+        
+            super(id, dni, apellido, nombre);
+        
+            this.materia = materia;
+            this.anio = anio;
+        }
+
+        static ToString(docente)
+        {
+            return super.ToString(docente);
+        }       
+
+        static ToJsonString(conId, docente)
+        {
+            return super.ToJsonString(conId, docente);
+        }
+    }
+
+    function getPersonasXML(){
+        
+        bloquearUI();
+
+        let request = new XMLHttpRequest();
+        
+        request.onreadystatechange=function(){
+         
+            if(request.readyState==4 && this.status == 200){
+                 
+                JsonAObjetos(this.responseText);
+
+                actualizarLista();
+                
+                desbloquearUI();
+            }
+        }
+    
+        request.open("GET", "http://localhost:5000/personas");
+    
+        request.send();
+    }
+
+    function bloquearUI() {
+        document.getElementById('bloqueoUI').style.visibility = "visible";
+        document.getElementById('spinner').style.visibility = "visible";
+    }
+
+    function desbloquearUI() {
+
+        document.getElementById('bloqueoUI').style.visibility = "hidden";
+        document.getElementById('spinner').style.visibility = "hidden";
+    }
+
+
+    function JsonAObjetos(arrayJson)
+    {
+        arrayJson = arrayJson.replace(/ñ/g,'ni');
+
+        var objetosJson = JSON.parse(arrayJson);
+    
+        listaPersonas.length = 0;
+
+        objetosJson.forEach(generarPersonas);
+
+        console.dir(listaPersonas);
+    }
+
+    function generarPersonas(objeto, index)
+    {
+        if(objeto != undefined)
+        {
+            if (objeto.hasOwnProperty('cursoLetra')) {
+                var alumno = new Alumno(objeto.id, objeto.dni, objeto.apellido, objeto.nombre,  objeto.cursoNumero, objeto.cursoLetra);
+            
+                listaPersonas.push(alumno);
+            }else{
+                var docente = new Docente(objeto.id, objeto.dni, objeto.apellido, objeto.nombre, objeto.materia, objeto.anio);
+
+                listaPersonas.push(docente);
+            }
+        }
+
+        sessionStorage.setItem('personas', JSON.stringify(listaPersonas));         
+    }   
+
+    function inicializarManejadores() { 
+
+        divTabla = document.getElementById('divTabla'); 
+
+        aceptar = document.getElementById('aceptar');
+        modificacion = document.getElementById('modificacion');
+        cancelar = document.getElementById('cancelar');
+
+        selectorAM = document.getElementById('tipoABMPersonas');
+
+        cerrarModal = document.getElementById('cerrarModal');
+
+        document.getElementById('camposDocente').hidden = true;
+        document.getElementById('formABM').hidden = true;
+
+        frmPersona = document.forms[0]; 
+
+        frmPersona.reset(); 
+
+        frmPersona.addEventListener('submit', e => {
+            e.preventDefault(); 
+
+            var frmId = document.getElementById('txtID');
+
+            if( frmId.value == undefined || frmId.value == ''){
+                agregarPersona();
+            }
+            else{
+                modificarPersona(idSeleccionado);
+            }
+
+            document.getElementById('formABM').hidden = true;
+        });
+
+        cancelar.addEventListener('click', function(){
+            
+            document.getElementById('formABM').hidden = true;
+            resetearFormulario();
+        });
+
+        selectorAM.addEventListener('change', function(){
+            ajustarFormulario();
+        });
+
+        cerrarModal.addEventListener('click', function(){
+            
+            document.getElementById('modal').style.display = "none";
+            resetearFormulario();
+        });
+
+  
+}
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+    }
+
+    function agregarPersona() {
+        const nuevaPersona = generarPersona();  
+
+        if (nuevaPersona) {
+            altaPersona(nuevaPersona);    
+        }
+    }
+
+    function altaPersona(persona){
+
+        let endpoint = "http://localhost:5000/personas/InsertarDocente";
+
+        if (esAlumno(persona)){
+            endpoint = "http://localhost:5000/personas/InsertarAlumno";
+        }
+
+        bloquearUI();
+
+        fetch(endpoint, {
+                        method: 'PUT',
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        credentials: 'same-origin',
+                        headers: {
+                        'Content-Type': 'application/json'
+                        },
+                        redirect: 'follow',
+                        referrerPolicy: 'no-referrer',
+                        body: Persona.ToJsonString(false, persona)
+        }).then(function(response) {
+
+            desbloquearUI();
+
+            if(response.ok) {
+                console.log(response.status);
+
+                response.json().then(value => {persona.id = value.id;
+                                            listaPersonas.push(persona);
+                                            console.dir(persona);
+                                            guardarDatos();
+                                            actualizarLista();
+                                    });
+
+                resetearFormulario(); 
+            
+            } else {
+                console.log(response.status);
+                console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');
+                resetearFormulario(); 
+            }
+        }).catch(function(error) {
+            console.log('Hubo un problema con su solicitud:' + error.message);
+            resetearFormulario(); 
+        });
+
+    }
+
+    async function modificarPersona(idSeleccionado){
+
+        index = encontrarIndexPersona(idSeleccionado);  
+
+        let endpoint = "";
+
+        let persona;
+
+        if(index > -1){ 
+            tipoPersonasABM = document.getElementById('tipoABMPersonas');
+            switch (tipoPersonasABM.value) {
+                case 'alumnos':
+                        endpoint = "http://localhost:5000/personas/ModificarAlumno";
+                        
+                        persona = new Alumno(frmPersona.id.value,
+                                            frmPersona.dni.value,
+                                            frmPersona.apellido.value,
+                                            frmPersona.nombre.value,
+                                            frmPersona.cursoNumero.value,
+                                            frmPersona.cursoLetra.value); 
+                        break;
+                case 'docentes':
+                        endpoint = "http://localhost:5000/personas/ModificarDocente";
+
+                        persona = new Docente(frmPersona.id.value,
+                                            frmPersona.dni.value,
+                                            frmPersona.apellido.value,
+                                            frmPersona.nombre.value,
+                                            frmPersona.materia.value,
+                                            frmPersona.anio.value); 
+                    break;
+                default:
+                    break;
+            }
+            
+            bloquearUI();
+
+            const response = await fetch(endpoint, {
+                            method: 'POST',
+                            mode: 'cors',
+                            cache: 'no-cache',
+                            credentials: 'same-origin',
+                            headers: {
+                            'Content-Type': 'application/json'
+                            },
+                            redirect: 'follow',
+                            referrerPolicy: 'no-referrer',
+                            body: Persona.ToJsonString(true, persona)
+                        });
+                    
+            if (!response.ok) {
+                console.log(response.status);
+                console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');
+                desbloquearUI();
+                resetearFormulario(); 
+	        }
+            else{
+                console.log(response.status);
+                const data = await response.text();
+                console.log(data);
+                listaPersonas[index] = persona;
+                desbloquearUI();
+                resetearFormulario(); 
+                actualizarLista();
+            }
+        }
+    }
+
+    function bajaPersona(idSeleccionado) {
+
+        index = encontrarIndexPersona(idSeleccionado);  
+
+        if (index > -1) {   
+        
+            bloquearUI();
+
+            let persona = listaPersonas[index];
+
+            let endpoint = "http://localhost:5000/personas/EliminarPersona";
+
+            fetch(endpoint, {
+                            method: 'DELETE',
+                            mode: 'cors',
+                            cache: 'no-cache',
+                            credentials: 'same-origin',
+                            headers: {
+                            'Content-Type': 'application/json'
+                            },
+                            redirect: 'follow',
+                            referrerPolicy: 'no-referrer',
+                            body: Persona.ToJsonString(true, persona)
+            }).then(function(response) {
+                if(response.ok) {
+                    console.log(response.status);
+                    response.text().then(value => {console.log(value)});
+                    listaPersonas.splice(index, 1); 
+                    actualizarLista();
+                    desbloquearUI();
+                } else {
+                    console.log(response.status);
+                    console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');
+                    desbloquearUI();
+                }
+            }).catch(function(error) {
+                console.log('Hubo un problema con su solicitud:' + error.message);
+                desbloquearUI();
+            });
+        }               
+    }
+
+    function obtenerPersonas() {    
+        return getPersonasXML();
+    }   
+
+    function generarPersona() {
+
+        tipoPersonasABM = document.getElementById('tipoABMPersonas');
+
+        switch (tipoPersonasABM.value) {
+            case 'alumnos':
+                return new Alumno(null,
+                                    frmPersona.dni.value,
+                                    frmPersona.apellido.value,
+                                    frmPersona.nombre.value,
+                                    frmPersona.cursoNumero.value,
+                                    frmPersona.cursoLetra.value); 
+                break;
+            case 'docentes':
+                return new Docente(null,
+                                    frmPersona.dni.value,
+                                    frmPersona.apellido.value,
+                                    frmPersona.nombre.value,
+                                    frmPersona.materia.value,
+                                    frmPersona.anio.value); 
+                break;
+            default:
+                break;
+        }
+    }   
+
+    function guardarDatos() {   
+        sessionStorage.setItem('personas', JSON.stringify(listaPersonas));
+    }   
+
+    function actualizarLista(filtro = undefined) {
+        divTabla.innerHTML = "";
+        divTabla.appendChild(crearTabla(listaPersonas, filtro));
+
+        agregar = document.getElementById('botonAgregar');
+
+        agregar.addEventListener('click', function(){        
+            resetearFormulario();
+            document.getElementById('formABM').hidden = false;
+        });
+    }   
+
+    function encontrarIndexPersona(id) {
+        return listaPersonas.findIndex(persona => persona.id == id);
+    }   
+
+    function encontrarPersona(index) {
+        return listaPersonas[index];
+    }   
+
+    function cargarFormulario(id) {
+
+        if(id){
+            const personaSeleccionada = encontrarPersona(encontrarIndexPersona(id));    
+
+            frmPersona.id.value = personaSeleccionada.id;
+            frmPersona.dni.value = personaSeleccionada.dni;
+            frmPersona.apellido.value = personaSeleccionada.apellido;
+            frmPersona.nombre.value = personaSeleccionada.nombre;
+
+            if (personaSeleccionada.hasOwnProperty('cursoNumero')) {
+                document.getElementById('tipoABMPersonas').value = 'alumnos';
+                ajustarFormulario();
+                frmPersona.cursoNumero.value = personaSeleccionada.cursoNumero;
+                frmPersona.cursoLetra.value = personaSeleccionada.cursoLetra;
+            }
+            else{
+                document.getElementById('tipoABMPersonas').value = 'docentes';
+                ajustarFormulario();
+                frmPersona.materia.value = personaSeleccionada.materia;
+                frmPersona.anio.value = personaSeleccionada.anio; 
+            }
+        }
+    } 
+
+    function ajustarFormulario(){
+        
+        filtroPersonasABM = document.getElementById('tipoABMPersonas');
+
+        if(filtroPersonasABM.value == 'alumnos'){
+        
+            document.getElementById('camposDocente').hidden = true;
+        
+            document.getElementById('txtMateria').removeAttribute('required');
+            document.getElementById('txtAnio').removeAttribute('required');
+        
+            document.getElementById('camposAlumno').hidden = false;
+        
+            document.getElementById('txtCursoLetra').setAttribute('required','');
+            document.getElementById('txtCursoNumero').setAttribute('required','');
+        }
+        else{
+            document.getElementById('camposDocente').hidden = false;
+
+            document.getElementById('txtMateria').setAttribute('required','');
+            document.getElementById('txtAnio').setAttribute('required','');
+
+            document.getElementById('camposAlumno').hidden = true;
+
+            document.getElementById('txtCursoLetra').removeAttribute('required');
+            document.getElementById('txtCursoNumero').removeAttribute('required');
+        }
+
+    }
+
+    function resetearFormulario() {
+        frmPersona.reset(); 
+    }   
+
+    function crearTabla(lista, filtro = undefined) {
+        const tabla = document.createElement('table');  
+
+        tabla.appendChild(crearCabecera());
+        tabla.appendChild(crearCuerpo(lista, filtro)); 
+
+        return tabla;
+    }   
+
+    function crearCabecera() {
+
+        const thead = document.createElement('thead');
+        const tr = document.createElement('tr');
+        const columnas = ['ID', 'DNI', 'Apellido', 'Nombre', 'CursoNumero', 'CursoLetra', 'Materia', 'Anio', 'Modificar', 'Eliminar'];
+
+        columnas.forEach(element => {
+            const td = document.createElement('td');
+            const texto = document.createTextNode(element != 'Anio' ? element : 'Año');
+            td.appendChild(texto);
+            tr.appendChild(td);   
+        }); 
+
+        thead.appendChild(tr);  
+
+        return thead;
+    }
+
+    function esAlumno(persona) {
+        return persona.cursoNumero != undefined;
+    }
+
+    function esDocente(persona) {
+        return persona.materia != undefined;
+    }
+
+    function crearCuerpo(lista, filtro = undefined) {   
+
+        switch (filtro) {
+            case 'alumnos':
+                lista = lista.filter(esAlumno);
+                break;
+
+            case 'docentes':
+                lista = lista.filter(esDocente);
+                break;
+        
+            default:
+                break;
+        }
+
+        const tbody = document.createElement('tbody');  
+
+        lista.forEach(element => {  
+
+            const tr = document.createElement('tr');    
+
+            for (const key in element) {    
+
+                var classTd = 'td';
+
+                if(key == 'materia'){
+                    tr.appendChild(crearCeldaEnBlanco('cursoNumero'));
+                    tr.appendChild(crearCeldaEnBlanco('cursoLetra'));
+                }
+
+                if (element.hasOwnProperty(key)) {
+                    const td = document.createElement('td');
+                    const texto = document.createTextNode(element[key]);
+                    td.appendChild(texto);
+                    td.className = classTd.concat('', key);
+                    tr.appendChild(td);
+                }   
+
+                if(key == 'cursoLetra'){
+                    tr.appendChild(crearCeldaEnBlanco('materia'));
+                    tr.appendChild(crearCeldaEnBlanco('anio'));
+                } 
+            }   
+
+            const tdModificar = document.createElement('td');
+
+            tdModificar.className = classTd.concat('tdBotonModificar');
+
+            var botonModificar = document.createElement('button');
+
+            botonModificar.setAttribute('class', 'botonModificar');
+
+            botonModificar.textContent = 'Modificar';
+
+            tdModificar.appendChild(botonModificar);
+
+            tr.appendChild(tdModificar);
+        
+            agregarManejadorBotonBM(botonModificar);
+
+            const tdEliminar = document.createElement('td');
+
+            tdEliminar.className = classTd.concat('tdBotonEliminar');         
+
+            var botonEliminar = document.createElement('button');           
+
+            botonEliminar.setAttribute('class', 'botonEliminar');          
+
+            botonEliminar.textContent = 'Eliminar';            
+
+            tdEliminar.appendChild(botonEliminar);
+                    
+            agregarManejadorBotonBM(botonEliminar);
+
+            tr.appendChild(tdEliminar);
+            
+            if(element.hasOwnProperty('id')){
+                 tr.dataset.id = element['id'];
+            }
+
+            tbody.appendChild(tr);
+        });
+
+        const trBoton = document.createElement('tr');
+        const tdBoton = document.createElement('td');
+        
+        tdBoton.colSpan = 10;
+        tdBoton.style.textAlign = 'center';
+
+        const botonAgregar = document.createElement('button');
+        botonAgregar.id ='botonAgregar';
+        botonAgregar.textContent = 'Agregar Elemento';
+
+        tdBoton.appendChild(botonAgregar);
+        trBoton.appendChild(tdBoton);
+
+        tbody.appendChild(trBoton);
+
+        return tbody;
+    }
+
+    function crearCeldaEnBlanco(key)
+    {
+        var classTd = 'td';
+        const td = document.createElement('td');
+        const texto = document.createTextNode('N/A');
+        td.appendChild(texto);
+        td.className = classTd.concat('', key);
+
+        return td;
+    }  
+
+    function crearCeldaEnBlanco(key)
+    {
+        var classTd = 'td';
+        const td = document.createElement('td');
+        const texto = document.createTextNode('N/A');
+        td.appendChild(texto);
+        td.className = classTd.concat('', key);
+
+        return td;
+    }   
+
+    function agregarManejadorBotonBM(boton) {
+        if (boton.className == 'botonModificar') {
+            boton.addEventListener('click', function (e) {
+                idSeleccionado = e.target.parentNode.parentNode.dataset.id;
+                cargarFormulario(idSeleccionado);
+                document.getElementById('formABM').hidden = false;
+            });
+        }
+        else if(boton.className == 'botonEliminar')
+        {
+            boton.addEventListener('click', function (e) {
+                idSeleccionado = e.target.parentNode.parentNode.dataset.id;
+                bajaPersona(idSeleccionado);
+            });
+        }
+    }
+</script>
+
+</head>
+
+<body>
+    <div id="bloqueoUI">
+        <div id="spinner"></div>
+    </div>
+    <div id="modal" class="modal">
+        <div id="contenidoModal">
+          <span id="cerrarModal">&times;</span>
+          <p>Some text in the Modal..</p>
+        </div>   
+    </div>
+    <section class="container">
+        <form id = "formABM">            
+            <label>
+                ID: <input type="number" id="txtID" name="id" disabled = "true">
+            </label>
+            <br><br>
+            <label>
+                DNI: <input type="number" id="txtDNI" name="dni" max="99999999">
+            </label>
+            <br><br>
+            <label>
+                Apellido: <input type="text" id="txtApellido" name="apellido" required>
+            </label>
+            <br><br>
+            <label>
+                Nombre: <input type="text" id="txtNombre" name="nombre" required>
+            </label>
+            <br><br>
+            <label for="tipoABMPersonas">Tipo: </label>
+            <select name = "tipoABMPersonas" id = "tipoABMPersonas">
+                <option value = "alumnos" selected>Alumnos</option>
+                <option value = "docentes">Docentes</option>
+            </select>
+            <br><br>
+            <fieldset id = "camposAlumno" class="fieldsetABM">
+                <label>
+                    Curso N&uacute;mero: <input type="number" id="txtCursoNumero" name="cursoNumero" min="1" required>
+                </label>
+                <br><br>
+                <label>
+                    Curso Letra: <input type="text" id="txtCursoLetra" name="cursoLetra" required>
+                </label>
+                <br><br>
+            </fieldset>
+            <fieldset id = "camposDocente" class="fieldsetABM">
+                <label>
+                    Materia: <input type="text" id="txtMateria" name="materia">
+                </label>
+                <br><br>
+                <label>
+                    A&ntilde;o: <input type="number" id="txtAnio" name="anio" min="2022" max="2070">
+                </label>
+                <br><br>
+            </fieldset>
+            <button type="submit" id="aceptar">Aceptar</button>
+            <button type="button" id="cancelar">Cancelar</button>
+        </form>
+    </section>
+    <section class="container">       
+        <form id = "controlesTabla">
+            <p>Formulario Lista</p>
+         </form>  
+    </section>
+    <section class="container">
+        <div id="divTabla"></div>
+    </section>
+</body>
+</html>

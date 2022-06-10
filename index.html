@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Practica Parcial</title>
+    <title>Damian Geisser - 2do Parcial</title>
 
 <style>
 
-html, body {
-  margin:0px;
-  height:100%;
-}
+    html, body {
+      margin:0px;
+      height:100%;
+    }
 
     .container{
         display: flex;
@@ -27,7 +27,7 @@ html, body {
         right:0px;
         bottom:0px;
         left:0px;
-        z-index: 1;
+        z-index: 2;
         cursor: wait;
         display: flex;
         justify-content: center;
@@ -96,7 +96,7 @@ html, body {
     }
 
     #modal {
-      /* display: none; Hidden by default */
+      display: none; /* Hidden by default */
       position: fixed; /* Stay in place */
       z-index: 1; /* Sit on top */
       left: 0;
@@ -132,8 +132,8 @@ html, body {
 </style>
 
 <script>
-    let listaPersonas = [];
-    let frmPersona;
+    let listaVehiculos = [];
+    let frmVehiculo;
     let proximoId;
     let divTabla;
     let aceptar;
@@ -149,110 +149,108 @@ html, body {
 
         desbloquearUI();
         inicializarManejadores();
-        getPersonasXML(); 
+        getVehiculos(); 
     });
 
-    class Persona { 
+    class Vehiculo { 
         id = 1;
-        dni = 1;
-        apellido = "";
-        nombre = "";    
+        fabricante = 1;
+        modelo = "";
+        añoLanzamiento = "";    
 
-        constructor(id, dni, apellido, nombre) {
+        constructor(id, fabricante, modelo, añoLanzamiento) {
             this.id = id;
-            this.dni = dni;
-            this.apellido = apellido;
-            this.nombre = nombre;
+            this.fabricante = fabricante;
+            this.modelo = modelo;
+            this.añoLanzamiento = añoLanzamiento;
         }   
 
-        static ToString(persona)
+        static ToString(vehiculo)
         {
-            return JSON.stringify(persona);
+            return JSON.stringify(vehiculo);
         }
 
-        static ToJsonString(conId, persona)
+        static ToJsonString(conId, vehiculo)
         {
             if(conId)
             {
-                return JSON.stringify(persona);
+                return JSON.stringify(vehiculo);
             }
             else{
-                persona.id = null;
+                vehiculo.id = null;
             
-                return JSON.stringify(persona);
+                return JSON.stringify(vehiculo);
             }
         }
     }
      
-    class Alumno extends Persona {
+    class Auto extends Vehiculo {
 
-        cursoNumero = 0;
-        cursoLetra = "";
+        cantidadPuertas;
 
-        constructor(id, dni, apellido, nombre, cursoNumero, cursoLetra) {
+        constructor(id, fabricante, modelo, añoLanzamiento, cantidadPuertas) {
         
-            super(id, dni, apellido, nombre);
+            super(id, fabricante, modelo, añoLanzamiento);
         
-            this.cursoNumero = cursoNumero;
-            this.cursoLetra = cursoLetra;
+            this.cantidadPuertas = cantidadPuertas;
         }
 
-        static ToString(alumno)
+        static ToString(auto)
         {
-            return super.ToString(alumno);
+            return super.ToString(auto);
         }
 
-        static ToJsonString(conId, alumno)
+        static ToJsonString(conId, auto)
         {
-            return super.ToJsonString(conId, alumno);
+            return super.ToJsonString(conId, auto);
         }
     }
 
-    class Docente extends Persona {
+    class Camioneta extends Vehiculo {
 
-        materia = "";
-        anio = 0;
+        transmision4x4;
 
-        constructor(id, dni, apellido, nombre, materia, anio) {
+        constructor(id, fabricante, modelo, añoLanzamiento, transmision4x4) {
         
-            super(id, dni, apellido, nombre);
+            super(id, fabricante, modelo, añoLanzamiento);
         
-            this.materia = materia;
-            this.anio = anio;
+            this.transmision4x4 = transmision4x4;
         }
 
-        static ToString(docente)
+        static ToString(camioneta)
         {
-            return super.ToString(docente);
+            return super.ToString(camioneta);
         }       
 
-        static ToJsonString(conId, docente)
+        static ToJsonString(conId, camioneta)
         {
-            return super.ToJsonString(conId, docente);
+            return super.ToJsonString(conId, camioneta);
         }
     }
 
-    function getPersonasXML(){
-        
+    function getVehiculos(){
+
         bloquearUI();
 
-        let request = new XMLHttpRequest();
-        
-        request.onreadystatechange=function(){
-         
-            if(request.readyState==4 && this.status == 200){
-                 
-                JsonAObjetos(this.responseText);
+        fetch('http://localhost:5000/vehiculos/Vehiculos').then(function(response) {
 
-                actualizarLista();
-                
-                desbloquearUI();
+            desbloquearUI();
+
+            if(response.ok) {
+                console.log(response.status);
+
+                response.text().then(value => {
+                                            console.log(value);
+                                            JsonAObjetos(value);
+                                            actualizarLista();
+                                    });            
+            } else {
+                console.log(response.status);
+                console.log('Respuesta de red: OK; Respuesta HTTP: ERROR'); 
             }
-        }
-    
-        request.open("GET", "http://localhost:5000/personas");
-    
-        request.send();
+        }).catch(function(error) {
+            console.log('Hubo un problema con su solicitud:' + error.message);
+        });
     }
 
     function bloquearUI() {
@@ -269,33 +267,33 @@ html, body {
 
     function JsonAObjetos(arrayJson)
     {
-        arrayJson = arrayJson.replace(/ñ/g,'ni');
-
+        //arrayJson = arrayJson.replace(/ñ/g,'ni');
+        
         var objetosJson = JSON.parse(arrayJson);
     
-        listaPersonas.length = 0;
+        listaVehiculos.length = 0;
 
-        objetosJson.forEach(generarPersonas);
+        objetosJson.forEach(generarVehiculos);
 
-        console.dir(listaPersonas);
+        console.dir(listaVehiculos);
     }
 
-    function generarPersonas(objeto, index)
+    function generarVehiculos(objeto, index)
     {
         if(objeto != undefined)
         {
-            if (objeto.hasOwnProperty('cursoLetra')) {
-                var alumno = new Alumno(objeto.id, objeto.dni, objeto.apellido, objeto.nombre,  objeto.cursoNumero, objeto.cursoLetra);
+            if (objeto.hasOwnProperty('cantidadPuertas')) {
+                var auto = new Auto(objeto.id, objeto.fabricante, objeto.modelo, objeto.añoLanzamiento, objeto.cantidadPuertas);
             
-                listaPersonas.push(alumno);
+                listaVehiculos.push(auto);
             }else{
-                var docente = new Docente(objeto.id, objeto.dni, objeto.apellido, objeto.nombre, objeto.materia, objeto.anio);
+                var camioneta = new Camioneta(objeto.id, objeto.fabricante, objeto.modelo, objeto.añoLanzamiento, objeto.transmision4x4);
 
-                listaPersonas.push(docente);
+                listaVehiculos.push(camioneta);
             }
         }
 
-        sessionStorage.setItem('personas', JSON.stringify(listaPersonas));         
+        sessionStorage.setItem('vehiculos', JSON.stringify(listaVehiculos));         
     }   
 
     function inicializarManejadores() { 
@@ -306,30 +304,32 @@ html, body {
         modificacion = document.getElementById('modificacion');
         cancelar = document.getElementById('cancelar');
 
-        selectorAM = document.getElementById('tipoABMPersonas');
+        selectorAM = document.getElementById('tipoABMVehiculos');
 
         cerrarModal = document.getElementById('cerrarModal');
 
-        document.getElementById('camposDocente').hidden = true;
+        document.getElementById('camposCamioneta').hidden = true;
         document.getElementById('formABM').hidden = true;
 
-        frmPersona = document.forms[0]; 
+        frmVehiculo = document.forms[0]; 
 
-        frmPersona.reset(); 
+        frmVehiculo.reset(); 
 
-        frmPersona.addEventListener('submit', e => {
-            e.preventDefault(); 
+        frmVehiculo.addEventListener('submit', e => {
+            e.preventDefault();
 
             var frmId = document.getElementById('txtID');
 
             if( frmId.value == undefined || frmId.value == ''){
-                agregarPersona();
+                agregarVehiculo();
             }
             else{
-                modificarPersona(idSeleccionado);
+                modificarVehiculo(idSeleccionado);
             }
 
             document.getElementById('formABM').hidden = true;
+
+            bloquearUI();
         });
 
         cancelar.addEventListener('click', function(){
@@ -348,103 +348,127 @@ html, body {
             resetearFormulario();
         });
 
-  
-}
+        window.onclick = function(event) {
+                const modal =  document.getElementById('modal');
 
-// When the user clicks anywhere outside of the modal, close it
-window.onclick = function(event) {
-  if (event.target == modal) {
-    modal.style.display = "none";
-  }
-    }
-
-    function agregarPersona() {
-        const nuevaPersona = generarPersona();  
-
-        if (nuevaPersona) {
-            altaPersona(nuevaPersona);    
-        }
-    }
-
-    function altaPersona(persona){
-
-        let endpoint = "http://localhost:5000/personas/InsertarDocente";
-
-        if (esAlumno(persona)){
-            endpoint = "http://localhost:5000/personas/InsertarAlumno";
-        }
-
-        bloquearUI();
-
-        fetch(endpoint, {
-                        method: 'PUT',
-                        mode: 'cors',
-                        cache: 'no-cache',
-                        credentials: 'same-origin',
-                        headers: {
-                        'Content-Type': 'application/json'
-                        },
-                        redirect: 'follow',
-                        referrerPolicy: 'no-referrer',
-                        body: Persona.ToJsonString(false, persona)
-        }).then(function(response) {
-
-            desbloquearUI();
-
-            if(response.ok) {
-                console.log(response.status);
-
-                response.json().then(value => {persona.id = value.id;
-                                            listaPersonas.push(persona);
-                                            console.dir(persona);
-                                            guardarDatos();
-                                            actualizarLista();
-                                    });
-
-                resetearFormulario(); 
-            
-            } else {
-                console.log(response.status);
-                console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');
-                resetearFormulario(); 
+                if (event.target == modal) {
+                modal.style.display = "none";
             }
-        }).catch(function(error) {
-            console.log('Hubo un problema con su solicitud:' + error.message);
-            resetearFormulario(); 
-        });
+        }
+    }
+
+    function agregarVehiculo() {
+        const nuevaVehiculo = generarVehiculo();  
+
+        if (nuevaVehiculo) {
+            altaVehiculo(nuevaVehiculo);    
+        }
+    }
+
+    function altaVehiculo(vehiculo){
+
+        let endpoint = "http://localhost:5000/Vehiculos/InsertarCamioneta";
+
+        if (esAuto(vehiculo)){
+            endpoint = "http://localhost:5000/Vehiculos/InsertarAuto";
+        }
+
+        let request = new XMLHttpRequest();
+        
+        request.onreadystatechange=function(){
+         
+            if(request.readyState==4 && this.status == 200){
+
+                const idRespuesta = JSON.parse(this.responseText);
+                vehiculo.id = idRespuesta.id;
+                listaVehiculos.push(vehiculo);
+                console.dir(vehiculo);
+                guardarDatos();
+                actualizarLista();                   
+                resetearFormulario();
+                
+                desbloquearUI();
+            }
+            else
+            {
+                resetearFormulario();
+                desbloquearUI();
+            }
+        }
+    
+        request.open("PUT", endpoint, true); //Inicializo la solicitud
+        request.setRequestHeader('Content-type', 'application/json'); //Seteo Encabezado
+        request.send(Vehiculo.ToJsonString(false, vehiculo)); //Envio la solicitud
+
+        // bloquearUI();
+
+        // fetch(endpoint, {
+        //                 method: 'PUT',
+        //                 mode: 'cors',
+        //                 cache: 'no-cache',
+        //                 credentials: 'same-origin',
+        //                 headers: {
+        //                 'Content-Type': 'application/json'
+        //                 },
+        //                 redirect: 'follow',
+        //                 referrerPolicy: 'no-referrer',
+        //                 body: Vehiculo.ToJsonString(false, vehiculo)
+        // }).then(function(response) {
+
+        //     desbloquearUI();
+
+        //     if(response.ok) {
+        //         console.log(response.status);
+
+        //         response.json().then(value => {vehiculo.id = value.id;
+        //                                     listaVehiculos.push(vehiculo);
+        //                                     console.dir(vehiculo);
+        //                                     guardarDatos();
+        //                                     actualizarLista();
+        //                             });
+
+        //         resetearFormulario(); 
+            
+        //     } else {
+        //         console.log(response.status);
+        //         console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');
+        //         resetearFormulario(); 
+        //     }
+        // }).catch(function(error) {
+        //     console.log('Hubo un problema con su solicitud:' + error.message);
+        //     resetearFormulario(); 
+        // });
 
     }
 
-    async function modificarPersona(idSeleccionado){
+    async function modificarVehiculo(idSeleccionado){
 
-        index = encontrarIndexPersona(idSeleccionado);  
+        index = encontrarIndexVehiculo(idSeleccionado);  
 
         let endpoint = "";
 
-        let persona;
+        let vehiculo;
 
         if(index > -1){ 
-            tipoPersonasABM = document.getElementById('tipoABMPersonas');
-            switch (tipoPersonasABM.value) {
-                case 'alumnos':
-                        endpoint = "http://localhost:5000/personas/ModificarAlumno";
+            tipoVehiculosABM = document.getElementById('tipoABMVehiculos');
+            switch (tipoVehiculosABM.value) {
+                case 'autos':
+                        endpoint = "http://localhost:5000/vehiculos/ModificarAuto";
                         
-                        persona = new Alumno(frmPersona.id.value,
-                                            frmPersona.dni.value,
-                                            frmPersona.apellido.value,
-                                            frmPersona.nombre.value,
-                                            frmPersona.cursoNumero.value,
-                                            frmPersona.cursoLetra.value); 
+                        vehiculo = new Auto(frmVehiculo.id.value,
+                                            frmVehiculo.fabricante.value,
+                                            frmVehiculo.modelo.value,
+                                            frmVehiculo.añoLanzamiento.value,
+                                            frmVehiculo.cantidadPuertas.value); 
                         break;
-                case 'docentes':
-                        endpoint = "http://localhost:5000/personas/ModificarDocente";
+                case 'camionetas':
+                        endpoint = "http://localhost:5000/vehiculos/ModificarCamioneta";
 
-                        persona = new Docente(frmPersona.id.value,
-                                            frmPersona.dni.value,
-                                            frmPersona.apellido.value,
-                                            frmPersona.nombre.value,
-                                            frmPersona.materia.value,
-                                            frmPersona.anio.value); 
+                        vehiculo = new Camioneta(frmVehiculo.id.value,
+                                            frmVehiculo.fabricante.value,
+                                            frmVehiculo.modelo.value,
+                                            frmVehiculo.añoLanzamiento.value,
+                                            frmVehiculo.transmision4x4.value); 
                     break;
                 default:
                     break;
@@ -462,7 +486,7 @@ window.onclick = function(event) {
                             },
                             redirect: 'follow',
                             referrerPolicy: 'no-referrer',
-                            body: Persona.ToJsonString(true, persona)
+                            body: Vehiculo.ToJsonString(true, vehiculo)
                         });
                     
             if (!response.ok) {
@@ -475,7 +499,7 @@ window.onclick = function(event) {
                 console.log(response.status);
                 const data = await response.text();
                 console.log(data);
-                listaPersonas[index] = persona;
+                listaVehiculos[index] = vehiculo;
                 desbloquearUI();
                 resetearFormulario(); 
                 actualizarLista();
@@ -483,17 +507,17 @@ window.onclick = function(event) {
         }
     }
 
-    function bajaPersona(idSeleccionado) {
+    function bajaVehiculo(idSeleccionado) {
 
-        index = encontrarIndexPersona(idSeleccionado);  
+        index = encontrarIndexVehiculo(idSeleccionado);  
 
         if (index > -1) {   
         
             bloquearUI();
 
-            let persona = listaPersonas[index];
+            let vehiculo = listaVehiculos[index];
 
-            let endpoint = "http://localhost:5000/personas/EliminarPersona";
+            let endpoint = "http://localhost:5000/vehiculos/EliminarVehiculo";
 
             fetch(endpoint, {
                             method: 'DELETE',
@@ -505,12 +529,12 @@ window.onclick = function(event) {
                             },
                             redirect: 'follow',
                             referrerPolicy: 'no-referrer',
-                            body: Persona.ToJsonString(true, persona)
+                            body: Vehiculo.ToJsonString(true, vehiculo)
             }).then(function(response) {
                 if(response.ok) {
                     console.log(response.status);
                     response.text().then(value => {console.log(value)});
-                    listaPersonas.splice(index, 1); 
+                    listaVehiculos.splice(index, 1); 
                     actualizarLista();
                     desbloquearUI();
                 } else {
@@ -525,30 +549,28 @@ window.onclick = function(event) {
         }               
     }
 
-    function obtenerPersonas() {    
-        return getPersonasXML();
+    function obtenerVehiculos() {    
+        return getVehiculos();
     }   
 
-    function generarPersona() {
+    function generarVehiculo() {
 
-        tipoPersonasABM = document.getElementById('tipoABMPersonas');
+        tipoVehiculosABM = document.getElementById('tipoABMVehiculos');
 
-        switch (tipoPersonasABM.value) {
-            case 'alumnos':
-                return new Alumno(null,
-                                    frmPersona.dni.value,
-                                    frmPersona.apellido.value,
-                                    frmPersona.nombre.value,
-                                    frmPersona.cursoNumero.value,
-                                    frmPersona.cursoLetra.value); 
+        switch (tipoVehiculosABM.value) {
+            case 'autos':
+                return new Auto(null,
+                                    frmVehiculo.fabricante.value,
+                                    frmVehiculo.modelo.value,
+                                    frmVehiculo.añoLanzamiento.value,
+                                    frmVehiculo.cantidadPuertas.value); 
                 break;
-            case 'docentes':
-                return new Docente(null,
-                                    frmPersona.dni.value,
-                                    frmPersona.apellido.value,
-                                    frmPersona.nombre.value,
-                                    frmPersona.materia.value,
-                                    frmPersona.anio.value); 
+            case 'camionetas':
+                return new Camioneta(null,
+                                    frmVehiculo.fabricante.value,
+                                    frmVehiculo.modelo.value,
+                                    frmVehiculo.añoLanzamiento.value,
+                                    frmVehiculo.transmision4x4.value); 
                 break;
             default:
                 break;
@@ -556,12 +578,12 @@ window.onclick = function(event) {
     }   
 
     function guardarDatos() {   
-        sessionStorage.setItem('personas', JSON.stringify(listaPersonas));
+        sessionStorage.setItem('vehiculos', JSON.stringify(listaVehiculos));
     }   
 
     function actualizarLista(filtro = undefined) {
         divTabla.innerHTML = "";
-        divTabla.appendChild(crearTabla(listaPersonas, filtro));
+        divTabla.appendChild(crearTabla(listaVehiculos, filtro));
 
         agregar = document.getElementById('botonAgregar');
 
@@ -571,71 +593,65 @@ window.onclick = function(event) {
         });
     }   
 
-    function encontrarIndexPersona(id) {
-        return listaPersonas.findIndex(persona => persona.id == id);
+    function encontrarIndexVehiculo(id) {
+        return listaVehiculos.findIndex(vehiculo => vehiculo.id == id);
     }   
 
-    function encontrarPersona(index) {
-        return listaPersonas[index];
+    function encontrarVehiculo(index) {
+        return listaVehiculos[index];
     }   
 
     function cargarFormulario(id) {
 
         if(id){
-            const personaSeleccionada = encontrarPersona(encontrarIndexPersona(id));    
+            const vehiculoSeleccionada = encontrarVehiculo(encontrarIndexVehiculo(id));    
 
-            frmPersona.id.value = personaSeleccionada.id;
-            frmPersona.dni.value = personaSeleccionada.dni;
-            frmPersona.apellido.value = personaSeleccionada.apellido;
-            frmPersona.nombre.value = personaSeleccionada.nombre;
+            frmVehiculo.id.value = vehiculoSeleccionada.id;
+            frmVehiculo.fabricante.value = vehiculoSeleccionada.fabricante;
+            frmVehiculo.modelo.value = vehiculoSeleccionada.modelo;
+            frmVehiculo.añoLanzamiento.value = vehiculoSeleccionada.añoLanzamiento;
 
-            if (personaSeleccionada.hasOwnProperty('cursoNumero')) {
-                document.getElementById('tipoABMPersonas').value = 'alumnos';
+            if (vehiculoSeleccionada.hasOwnProperty('cantidadPuertas')) {
+                document.getElementById('tipoABMVehiculos').value = 'autos';
                 ajustarFormulario();
-                frmPersona.cursoNumero.value = personaSeleccionada.cursoNumero;
-                frmPersona.cursoLetra.value = personaSeleccionada.cursoLetra;
+                frmVehiculo.cantidadPuertas.value = vehiculoSeleccionada.cantidadPuertas;
             }
             else{
-                document.getElementById('tipoABMPersonas').value = 'docentes';
+                document.getElementById('tipoABMVehiculos').value = 'camionetas';
                 ajustarFormulario();
-                frmPersona.materia.value = personaSeleccionada.materia;
-                frmPersona.anio.value = personaSeleccionada.anio; 
+                frmVehiculo.transmision4x4.value = vehiculoSeleccionada.transmision4x4;
             }
         }
     } 
 
     function ajustarFormulario(){
         
-        filtroPersonasABM = document.getElementById('tipoABMPersonas');
+        filtroVehiculosABM = document.getElementById('tipoABMVehiculos');
 
-        if(filtroPersonasABM.value == 'alumnos'){
+        if(filtroVehiculosABM.value == 'autos'){
         
-            document.getElementById('camposDocente').hidden = true;
+            document.getElementById('camposCamioneta').hidden = true;
         
-            document.getElementById('txtMateria').removeAttribute('required');
-            document.getElementById('txtAnio').removeAttribute('required');
+            document.getElementById('txtTransmision4x4').removeAttribute('required');
+    
+            document.getElementById('camposAuto').hidden = false;
         
-            document.getElementById('camposAlumno').hidden = false;
-        
-            document.getElementById('txtCursoLetra').setAttribute('required','');
-            document.getElementById('txtCursoNumero').setAttribute('required','');
+            document.getElementById('txtCantidadPuertas').setAttribute('required','');
         }
         else{
-            document.getElementById('camposDocente').hidden = false;
+            document.getElementById('camposCamioneta').hidden = false;
 
-            document.getElementById('txtMateria').setAttribute('required','');
-            document.getElementById('txtAnio').setAttribute('required','');
+            document.getElementById('txtTransmision4x4').setAttribute('required','');
 
-            document.getElementById('camposAlumno').hidden = true;
+            document.getElementById('camposAuto').hidden = true;
 
-            document.getElementById('txtCursoLetra').removeAttribute('required');
-            document.getElementById('txtCursoNumero').removeAttribute('required');
+            document.getElementById('txtCantidadPuertas').removeAttribute('required');
         }
 
     }
 
     function resetearFormulario() {
-        frmPersona.reset(); 
+        frmVehiculo.reset(); 
     }   
 
     function crearTabla(lista, filtro = undefined) {
@@ -651,7 +667,7 @@ window.onclick = function(event) {
 
         const thead = document.createElement('thead');
         const tr = document.createElement('tr');
-        const columnas = ['ID', 'DNI', 'Apellido', 'Nombre', 'CursoNumero', 'CursoLetra', 'Materia', 'Anio', 'Modificar', 'Eliminar'];
+        const columnas = ['ID', 'Fabricante', 'Modelo', 'Año de Lanzamiento', 'Cantidad de Puertas', 'Transmision 4x4', 'Modificar', 'Eliminar'];
 
         columnas.forEach(element => {
             const td = document.createElement('td');
@@ -665,23 +681,23 @@ window.onclick = function(event) {
         return thead;
     }
 
-    function esAlumno(persona) {
-        return persona.cursoNumero != undefined;
+    function esAuto(vehiculo) {
+        return vehiculo.cantidadPuertas != undefined;
     }
 
-    function esDocente(persona) {
-        return persona.materia != undefined;
+    function esCamioneta(vehiculo) {
+        return vehiculo.transmision4x4 != undefined;
     }
 
     function crearCuerpo(lista, filtro = undefined) {   
 
         switch (filtro) {
-            case 'alumnos':
-                lista = lista.filter(esAlumno);
+            case 'autos':
+                lista = lista.filter(esAuto);
                 break;
 
-            case 'docentes':
-                lista = lista.filter(esDocente);
+            case 'camionetas':
+                lista = lista.filter(esCamioneta);
                 break;
         
             default:
@@ -698,9 +714,8 @@ window.onclick = function(event) {
 
                 var classTd = 'td';
 
-                if(key == 'materia'){
-                    tr.appendChild(crearCeldaEnBlanco('cursoNumero'));
-                    tr.appendChild(crearCeldaEnBlanco('cursoLetra'));
+                if(key == 'transmision4x4'){
+                    tr.appendChild(crearCeldaEnBlanco('cantidadPuertas'));
                 }
 
                 if (element.hasOwnProperty(key)) {
@@ -711,9 +726,8 @@ window.onclick = function(event) {
                     tr.appendChild(td);
                 }   
 
-                if(key == 'cursoLetra'){
-                    tr.appendChild(crearCeldaEnBlanco('materia'));
-                    tr.appendChild(crearCeldaEnBlanco('anio'));
+                if(key == 'cantidadPuertas'){
+                    tr.appendChild(crearCeldaEnBlanco('transmision4x4'));
                 } 
             }   
 
@@ -808,7 +822,7 @@ window.onclick = function(event) {
         {
             boton.addEventListener('click', function (e) {
                 idSeleccionado = e.target.parentNode.parentNode.dataset.id;
-                bajaPersona(idSeleccionado);
+                bajaVehiculo(idSeleccionado);
             });
         }
     }
@@ -833,40 +847,32 @@ window.onclick = function(event) {
             </label>
             <br><br>
             <label>
-                DNI: <input type="number" id="txtDNI" name="dni" max="99999999">
+                Fabricante: <input type="text" id="txtFabricante" name="fabricante" required>
             </label>
             <br><br>
             <label>
-                Apellido: <input type="text" id="txtApellido" name="apellido" required>
+                Modelo: <input type="text" id="txtModelo" name="modelo" required>
             </label>
             <br><br>
             <label>
-                Nombre: <input type="text" id="txtNombre" name="nombre" required>
+                A&ntilde;o de Lanzamiento: <input type="number" id="txtAñoLanzamiento" name="añoLanzamiento" min="1920" max="2022" required>
             </label>
             <br><br>
-            <label for="tipoABMPersonas">Tipo: </label>
-            <select name = "tipoABMPersonas" id = "tipoABMPersonas">
-                <option value = "alumnos" selected>Alumnos</option>
-                <option value = "docentes">Docentes</option>
+            <label for="tipoABMVehiculos">Tipo: </label>
+            <select name = "tipoABMVehiculos" id = "tipoABMVehiculos">
+                <option value = "autos" selected>Autos</option>
+                <option value = "camionetas">Camionetas</option>
             </select>
             <br><br>
-            <fieldset id = "camposAlumno" class="fieldsetABM">
+            <fieldset id = "camposAuto" class="fieldsetABM">
                 <label>
-                    Curso N&uacute;mero: <input type="number" id="txtCursoNumero" name="cursoNumero" min="1" required>
-                </label>
-                <br><br>
-                <label>
-                    Curso Letra: <input type="text" id="txtCursoLetra" name="cursoLetra" required>
+                    Cantidad de Puertas: <input type="number" id="txtCantidadPuertas" name="cantidadPuertas" min="2">
                 </label>
                 <br><br>
             </fieldset>
-            <fieldset id = "camposDocente" class="fieldsetABM">
+            <fieldset id = "camposCamioneta" class="fieldsetABM">
                 <label>
-                    Materia: <input type="text" id="txtMateria" name="materia">
-                </label>
-                <br><br>
-                <label>
-                    A&ntilde;o: <input type="number" id="txtAnio" name="anio" min="2022" max="2070">
+                    Transmisi&oacute;n 4x4: <input type="text" id="txtTransmision4x4" name="transmision4x4">
                 </label>
                 <br><br>
             </fieldset>

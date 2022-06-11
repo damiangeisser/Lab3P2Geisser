@@ -16,7 +16,7 @@
     .container{
         display: flex;
         justify-content: center;
-        background-color: #cccccc;
+        background-color:#cfb189;
     }
 
     #bloqueoUI{
@@ -61,24 +61,28 @@
     }
 
     #controlesTabla{
-        text-align: center;
         justify-content: center;
-        background-color: #c58d43;
-        width: 100%;
+        padding: 10px;
+        width: 55%;
+        min-width: 300px;
+        min-height: 50px;
+        background-color:#cfb189;
     }
-
+    
     body{
         border-collapse: collapse;
-        background-color: #cccccc;
+        background-color:  #cfb189;
+        font-family: Arial, Helvetica, sans-serif;
     }
 
     table{
         border-collapse: collapse;
-        background-color: #cccccc;
+        background-color:#cfb189;
+        min-width: 800px;
     }
 
     table, th, td{
-        border: 1px solid black;
+        border: 1px solid #4d2f08;
         padding: 5px;
     }
 
@@ -91,33 +95,35 @@
         width: 25%;
         min-width: 300px;
         height: 40%;
-        min-height: 250px;
+        min-height: 300px;
         background-color:  #c58d43;
     }
 
     #modal {
-      display: none; /* Hidden by default */
-      position: fixed; /* Stay in place */
-      z-index: 1; /* Sit on top */
+      visibility: hidden;
+      position: fixed;
+      z-index: 1;
       left: 0;
       top: 0;
-      width: 100%; /* Full width */
-      height: 100%; /* Full height */
-      overflow: auto; /* Enable scroll if needed */
-      background-color: rgb(0,0,0); /* Fallback color */
-      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+      width: 100%; 
+      height: 100%;
+      overflow: auto;
+      background: #FFFFFF;
+      opacity: 0.7;
     }
 
     #contenidoModal {
-      background-color: #fefefe;
-      margin: 15% auto; /* 15% from the top and centered */
+      background: #cfb189;
+      opacity: 1;
+      margin: 15% auto;
       padding: 20px;
       border: 1px solid #888;
-      width: 80%; /* Could be more or less, depending on screen size */
+      height:250px;
+      width:250px;
     }
 
     #cerrarModal {
-      color: #aaa;
+      color: rgb(255, 0, 0);
       float: right;
       font-size: 28px;
       font-weight: bold;
@@ -246,10 +252,14 @@
                                     });            
             } else {
                 console.log(response.status);
-                console.log('Respuesta de red: OK; Respuesta HTTP: ERROR'); 
+                console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');       
+                document.getElementById('mensajeModal').innerHTML =response.status + " HTTP: ERROR";
+                document.getElementById('modal').style.visibility = "visible";
             }
         }).catch(function(error) {
             console.log('Hubo un problema con su solicitud:' + error.message);
+            document.getElementById('mensajeModal').innerHTML = error.message;
+            document.getElementById('modal').style.visibility = "visible";
         });
     }
 
@@ -267,8 +277,6 @@
 
     function JsonAObjetos(arrayJson)
     {
-        //arrayJson = arrayJson.replace(/ñ/g,'ni');
-        
         var objetosJson = JSON.parse(arrayJson);
     
         listaVehiculos.length = 0;
@@ -323,8 +331,12 @@
             if( frmId.value == undefined || frmId.value == ''){
                 agregarVehiculo();
             }
-            else{
+            else if(document.getElementById('tituloFormABM').innerHTML == 'Modificar'){
+               
                 modificarVehiculo(idSeleccionado);
+            }
+            else{
+                bajaVehiculo(idSeleccionado);
             }
 
             document.getElementById('formABM').hidden = true;
@@ -336,6 +348,7 @@
             
             document.getElementById('formABM').hidden = true;
             resetearFormulario();
+            ajustarFormulario();
         });
 
         selectorAM.addEventListener('change', function(){
@@ -344,7 +357,7 @@
 
         cerrarModal.addEventListener('click', function(){
             
-            document.getElementById('modal').style.display = "none";
+            document.getElementById('modal').style.visibility = "hidden";
             resetearFormulario();
         });
 
@@ -352,7 +365,7 @@
                 const modal =  document.getElementById('modal');
 
                 if (event.target == modal) {
-                modal.style.display = "none";
+                modal.style.visibility = "hidden";
             }
         }
     }
@@ -377,68 +390,31 @@
         
         request.onreadystatechange=function(){
          
-            if(request.readyState==4 && this.status == 200){
+            if (request.readyState==4) {
+                if(this.status == 200){
 
-                const idRespuesta = JSON.parse(this.responseText);
-                vehiculo.id = idRespuesta.id;
-                listaVehiculos.push(vehiculo);
-                console.dir(vehiculo);
-                guardarDatos();
-                actualizarLista();                   
-                resetearFormulario();
-                
-                desbloquearUI();
-            }
-            else
-            {
-                resetearFormulario();
-                desbloquearUI();
-            }
+                    const idRespuesta = JSON.parse(this.responseText);
+                    vehiculo.id = idRespuesta.id;
+                    listaVehiculos.push(vehiculo);
+                    console.dir(vehiculo);
+                    guardarDatos();
+                    actualizarLista();                   
+                    resetearFormulario();          
+                    desbloquearUI();
+                }
+                else
+                {   
+                    resetearFormulario();
+                    desbloquearUI();
+                    document.getElementById('mensajeModal').innerHTML = this.status + " HTTP: ERROR";
+                    document.getElementById('modal').style.visibility = "visible";
+                }
+            }            
         }
     
-        request.open("PUT", endpoint, true); //Inicializo la solicitud
-        request.setRequestHeader('Content-type', 'application/json'); //Seteo Encabezado
-        request.send(Vehiculo.ToJsonString(false, vehiculo)); //Envio la solicitud
-
-        // bloquearUI();
-
-        // fetch(endpoint, {
-        //                 method: 'PUT',
-        //                 mode: 'cors',
-        //                 cache: 'no-cache',
-        //                 credentials: 'same-origin',
-        //                 headers: {
-        //                 'Content-Type': 'application/json'
-        //                 },
-        //                 redirect: 'follow',
-        //                 referrerPolicy: 'no-referrer',
-        //                 body: Vehiculo.ToJsonString(false, vehiculo)
-        // }).then(function(response) {
-
-        //     desbloquearUI();
-
-        //     if(response.ok) {
-        //         console.log(response.status);
-
-        //         response.json().then(value => {vehiculo.id = value.id;
-        //                                     listaVehiculos.push(vehiculo);
-        //                                     console.dir(vehiculo);
-        //                                     guardarDatos();
-        //                                     actualizarLista();
-        //                             });
-
-        //         resetearFormulario(); 
-            
-        //     } else {
-        //         console.log(response.status);
-        //         console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');
-        //         resetearFormulario(); 
-        //     }
-        // }).catch(function(error) {
-        //     console.log('Hubo un problema con su solicitud:' + error.message);
-        //     resetearFormulario(); 
-        // });
-
+        request.open("PUT", endpoint, true);
+        request.setRequestHeader('Content-type', 'application/json');
+        request.send(Vehiculo.ToJsonString(false, vehiculo));
     }
 
     async function modificarVehiculo(idSeleccionado){
@@ -492,6 +468,8 @@
             if (!response.ok) {
                 console.log(response.status);
                 console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');
+                document.getElementById('mensajeModal').innerHTML = response.status + " HTTP: ERROR";
+                document.getElementById('modal').style.visibility = "visible";
                 desbloquearUI();
                 resetearFormulario(); 
 	        }
@@ -511,7 +489,9 @@
 
         index = encontrarIndexVehiculo(idSeleccionado);  
 
-        if (index > -1) { 
+        if (index > -1) {
+
+            document.getElementById('formABM').hidden = true;
         
             bloquearUI();
 
@@ -541,10 +521,14 @@
                     console.log(response.status);
                     console.log('Respuesta de red: OK; Respuesta HTTP: ERROR');
                     desbloquearUI();
+                    document.getElementById('mensajeModal').innerHTML = response.status + " HTTP: ERROR";
+                    document.getElementById('modal').style.visibility = "visible";
                 }
             }).catch(function(error) {
                 console.log('Hubo un problema con su solicitud:' + error.message);
                 desbloquearUI();
+                document.getElementById('mensajeModal').innerHTML = "error.message";
+                document.getElementById('modal').style.visibility = "visible";
             });
         }               
     }
@@ -589,6 +573,7 @@
 
         agregar.addEventListener('click', function(){        
             resetearFormulario();
+            document.getElementById('tituloFormABM').innerHTML = "Alta";
             document.getElementById('formABM').hidden = false;
         });
     }   
@@ -815,14 +800,18 @@
             boton.addEventListener('click', function (e) {
                 idSeleccionado = e.target.parentNode.parentNode.dataset.id;
                 cargarFormulario(idSeleccionado);
-                document.getElementById('formABM').hidden = false;
+         
+                document.getElementById('tituloFormABM').innerHTML = "Modificar";
+                document.getElementById('formABM').hidden = false;               
             });
         }
         else if(boton.className == 'botonEliminar')
         {
             boton.addEventListener('click', function (e) {
                 idSeleccionado = e.target.parentNode.parentNode.dataset.id;
-                bajaVehiculo(idSeleccionado);
+                cargarFormulario(idSeleccionado);
+                document.getElementById('tituloFormABM').innerHTML = "Eliminar";
+                document.getElementById('formABM').hidden = false;
             });
         }
     }
@@ -834,14 +823,15 @@
     <div id="bloqueoUI">
         <div id="spinner"></div>
     </div>
-    <div id="modal" class="modal">
+    <div id="modal">
         <div id="contenidoModal">
           <span id="cerrarModal">&times;</span>
-          <p>Some text in the Modal..</p>
+          <p id="mensajeModal"></p>
         </div>   
     </div>
     <section class="container">
-        <form id = "formABM">            
+        <form id = "formABM">
+            <p id ="tituloFormABM">Alta</p>    
             <label>
                 ID: <input type="number" id="txtID" name="id" disabled = "true">
             </label>
@@ -872,7 +862,7 @@
             </fieldset>
             <fieldset id = "camposCamioneta" class="fieldsetABM">
                 <label>
-                    Transmisi&oacute;n 4x4: <input type="text" id="txtTransmision4x4" name="transmision4x4">
+                    Transmisi&oacute;n 4x4: <input type="text" pattern="^(?:SI|NO)$" title="ingrese SI o NO" id="txtTransmision4x4" name="transmision4x4">
                 </label>
                 <br><br>
             </fieldset>
@@ -881,9 +871,9 @@
         </form>
     </section>
     <section class="container">       
-        <form id = "controlesTabla">
+        <div id = "controlesTabla">
             <p>Formulario Lista</p>
-         </form>  
+        </div>  
     </section>
     <section class="container">
         <div id="divTabla"></div>
